@@ -69,7 +69,57 @@ class FlightSearchLoadingScreen extends StatelessWidget {
 
 ---
 
-### 2. High-Precision Explicit Coordinates
+### 2. Round-Trip Itinerary (Outbound & Return Trajectories)
+
+Render dual animated trajectory arcs (outbound and return) with bidirectional header indicators:
+
+```dart
+FlightRouteLoader.roundTrip(
+  from: const FlightRouteStop(code: 'DAC', city: 'Dhaka'),
+  to: const FlightRouteStop(code: 'CXB', city: "Cox's Bazar"),
+  brandColor: const Color(0xFF1F4A3F),
+  onCancel: () => Navigator.pop(context),
+)
+```
+
+---
+
+### 3. Multi-City Itinerary (3+ Stops)
+
+Frame all stops on the world map and animate the airplane sequentially across each leg:
+
+```dart
+FlightRouteLoader.multiCity(
+  stops: const [
+    FlightRouteStop(code: 'DAC', city: 'Dhaka'),
+    FlightRouteStop(code: 'DXB', city: 'Dubai'),
+    FlightRouteStop(code: 'LHR', city: 'London'),
+  ],
+  brandColor: const Color(0xFF0D5C75),
+)
+```
+
+---
+
+### 4. Direct Airport Models
+
+Pass your existing `Airport` models directly without manual parameter unpacking:
+
+```dart
+final List<Airport> mySelectedAirports = [
+  Airport(code: 'JFK', name: 'John F. Kennedy', city: 'New York', country: 'United States'),
+  Airport(code: 'LHR', name: 'Heathrow', city: 'London', country: 'United Kingdom'),
+];
+
+FlightRouteLoader.fromAirports(
+  airports: mySelectedAirports,
+  tripType: FlightTripType.roundTrip,
+)
+```
+
+---
+
+### 5. High-Precision Explicit Coordinates
 
 If your flight search API provides coordinates, pass them directly for exact positioning:
 
@@ -83,7 +133,7 @@ FlightRouteLoader(
   toCity: "Cox's Bazar",
   toLat: 21.4522,
   toLng: 91.9639,
-  brandColor: const Color(0xFF1F4A3F), // Forest green or brand theme
+  brandColor: const Color(0xFF1F4A3F),
   subtitle: 'ROUND TRIP • 1 PASSENGER',
   onCancel: () => Navigator.pop(context),
 )

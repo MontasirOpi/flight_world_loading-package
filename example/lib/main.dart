@@ -53,6 +53,9 @@ class _FlightLoaderExampleAppState extends State<FlightLoaderExampleApp> {
 class DemoRouteItem {
   final String title;
   final String subtitle;
+  final FlightTripType tripType;
+  final List<FlightRouteStop>? stops;
+  final List<Airport>? airports;
   final String fromCode;
   final String fromCity;
   final String toCode;
@@ -66,10 +69,13 @@ class DemoRouteItem {
   const DemoRouteItem({
     required this.title,
     required this.subtitle,
-    required this.fromCode,
-    required this.fromCity,
-    required this.toCode,
-    required this.toCity,
+    this.tripType = FlightTripType.oneWay,
+    this.stops,
+    this.airports,
+    this.fromCode = '',
+    this.fromCity = '',
+    this.toCode = '',
+    this.toCity = '',
     this.fromLat,
     this.fromLng,
     this.toLat,
@@ -90,8 +96,9 @@ class DemoHomeScreen extends StatelessWidget {
 
   static const List<DemoRouteItem> demoRoutes = [
     DemoRouteItem(
-      title: 'Domestic Hop (Adaptive Close Zoom)',
-      subtitle: 'Dhaka (DAC) ➔ Cox\'s Bazar (CXB)',
+      title: 'Round-Trip Flight (Outbound & Return)',
+      subtitle: 'Dhaka (DAC) ⇄ Cox\'s Bazar (CXB)',
+      tripType: FlightTripType.roundTrip,
       fromCode: 'DAC',
       fromCity: 'Dhaka',
       fromLat: 23.8433,
@@ -103,62 +110,156 @@ class DemoHomeScreen extends StatelessWidget {
       brandColor: Color(0xFF1F4A3F),
     ),
     DemoRouteItem(
-      title: 'Transatlantic Flight',
-      subtitle: 'New York (JFK) ➔ London (LHR)',
-      fromCode: 'JFK',
-      fromCity: 'New York',
-      toCode: 'LHR',
-      toCity: 'London',
+      title: 'Multi-City Flight (3 Itinerary Legs)',
+      subtitle: 'Dhaka (DAC) ➔ Dubai (DXB) ➔ London (LHR)',
+      tripType: FlightTripType.multiCity,
+      stops: [
+        FlightRouteStop(
+          code: 'DAC',
+          city: 'Dhaka',
+          latitude: 23.8433,
+          longitude: 90.3978,
+        ),
+        FlightRouteStop(
+          code: 'DXB',
+          city: 'Dubai',
+          latitude: 25.2532,
+          longitude: 55.3657,
+        ),
+        FlightRouteStop(
+          code: 'LHR',
+          city: 'London',
+          latitude: 51.4700,
+          longitude: -0.4543,
+        ),
+      ],
       brandColor: Color(0xFF0D5C75),
     ),
     DemoRouteItem(
-      title: 'Global Long-Haul (Full Hemisphere)',
-      subtitle: 'London (LHR) ➔ Tokyo (HND)',
-      fromCode: 'LHR',
-      fromCity: 'London',
-      toCode: 'HND',
-      toCity: 'Tokyo',
+      title: 'Multi-City Global Tour (4 Stops)',
+      subtitle: 'London (LHR) ➔ Dubai (DXB) ➔ Singapore (SIN) ➔ Tokyo (HND)',
+      tripType: FlightTripType.multiCity,
+      stops: [
+        FlightRouteStop(code: 'LHR', city: 'London'),
+        FlightRouteStop(code: 'DXB', city: 'Dubai'),
+        FlightRouteStop(code: 'SIN', city: 'Singapore'),
+        FlightRouteStop(code: 'HND', city: 'Tokyo'),
+      ],
       brandColor: Color(0xFF7A2021),
     ),
     DemoRouteItem(
-      title: 'Asia-Pacific Regional Route',
+      title: 'Airport Model Direct Input',
+      subtitle: 'Direct Airport instances without unpacking properties',
+      tripType: FlightTripType.roundTrip,
+      airports: [
+        Airport(
+          code: 'JFK',
+          name: 'John F. Kennedy International Airport',
+          city: 'New York',
+          country: 'United States',
+          latitude: 40.6413,
+          longitude: -73.7781,
+        ),
+        Airport(
+          code: 'LHR',
+          name: 'London Heathrow Airport',
+          city: 'London',
+          country: 'United Kingdom',
+          latitude: 51.4700,
+          longitude: -0.4543,
+        ),
+      ],
+      brandColor: Color(0xFF2E4057),
+    ),
+    DemoRouteItem(
+      title: 'One-Way Domestic Hop',
+      subtitle: 'Dhaka (DAC) ➔ Cox\'s Bazar (CXB)',
+      tripType: FlightTripType.oneWay,
+      fromCode: 'DAC',
+      fromCity: 'Dhaka',
+      fromLat: 23.8433,
+      fromLng: 90.3978,
+      toCode: 'CXB',
+      toCity: "Cox's Bazar",
+      toLat: 21.4522,
+      toLng: 91.9639,
+      brandColor: Color(0xFF1F4A3F),
+    ),
+    DemoRouteItem(
+      title: 'One-Way Asia-Pacific Route',
       subtitle: 'Dubai (DXB) ➔ Singapore (SIN)',
+      tripType: FlightTripType.oneWay,
       fromCode: 'DXB',
       fromCity: 'Dubai',
       toCode: 'SIN',
       toCity: 'Singapore',
       brandColor: Color(0xFF5A3E1B),
     ),
-    DemoRouteItem(
-      title: 'Auto Coordinate Fallback Resolution',
-      subtitle: 'Unknown Airport Codes with Country Centroid',
-      fromCode: 'DAC',
-      fromCity: 'Dhaka',
-      toCode: 'BNE',
-      toCity: 'Brisbane',
-      brandColor: Color(0xFF2E4057),
-    ),
   ];
 
   void _openLoader(BuildContext context, DemoRouteItem route) {
+    Widget loaderWidget;
+
+    if (route.airports != null && route.airports!.isNotEmpty) {
+      loaderWidget = FlightRouteLoader.fromAirports(
+        airports: route.airports!,
+        tripType: route.tripType,
+        brandColor: route.brandColor,
+        onCancel: () => Navigator.pop(context),
+      );
+    } else if (route.stops != null && route.stops!.isNotEmpty) {
+      if (route.tripType == FlightTripType.multiCity) {
+        loaderWidget = FlightRouteLoader.multiCity(
+          stops: route.stops!,
+          brandColor: route.brandColor,
+          onCancel: () => Navigator.pop(context),
+        );
+      } else if (route.tripType == FlightTripType.roundTrip) {
+        loaderWidget = FlightRouteLoader.roundTrip(
+          from: route.stops!.first,
+          to: route.stops!.last,
+          brandColor: route.brandColor,
+          onCancel: () => Navigator.pop(context),
+        );
+      } else {
+        loaderWidget = FlightRouteLoader.oneWay(
+          from: route.stops!.first,
+          to: route.stops!.last,
+          brandColor: route.brandColor,
+          onCancel: () => Navigator.pop(context),
+        );
+      }
+    } else {
+      loaderWidget = FlightRouteLoader(
+        tripType: route.tripType,
+        fromCode: route.fromCode,
+        fromCity: route.fromCity,
+        fromLat: route.fromLat,
+        fromLng: route.fromLng,
+        toCode: route.toCode,
+        toCity: route.toCity,
+        toLat: route.toLat,
+        toLng: route.toLng,
+        brandColor: route.brandColor,
+        onCancel: () => Navigator.pop(context),
+      );
+    }
+
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => FlightRouteLoader(
-          fromCode: route.fromCode,
-          fromCity: route.fromCity,
-          fromLat: route.fromLat,
-          fromLng: route.fromLng,
-          toCode: route.toCode,
-          toCity: route.toCity,
-          toLat: route.toLat,
-          toLng: route.toLng,
-          brandColor: route.brandColor,
-          subtitle: 'ROUND TRIP • 1 PASSENGER',
-          onCancel: () => Navigator.pop(context),
-        ),
-      ),
+      MaterialPageRoute(builder: (context) => loaderWidget),
     );
+  }
+
+  IconData _iconForTripType(FlightTripType tripType) {
+    switch (tripType) {
+      case FlightTripType.roundTrip:
+        return Icons.sync_alt_rounded;
+      case FlightTripType.multiCity:
+        return Icons.alt_route_rounded;
+      case FlightTripType.oneWay:
+        return Icons.flight_takeoff_rounded;
+    }
   }
 
   @override
@@ -188,7 +289,7 @@ class DemoHomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 6.0),
           Text(
-            'Tap any route below to preview offline vector map flight animations with adaptive zoom scaling.',
+            'Preview offline vector map loading screens with adaptive zoom for One-Way, Round-Trip, and Multi-City routes.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -219,7 +320,7 @@ class DemoHomeScreen extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          Icons.flight_takeoff_rounded,
+                          _iconForTripType(route.tripType),
                           color: route.brandColor,
                           size: 22.0,
                         ),

@@ -20,8 +20,7 @@ class MapProjectionHelper {
   }
 
   /// Calculates a viewport scale and offset to fit two points on the canvas
-  /// with dynamic adaptive zoom: short domestic routes zoom in closely with comfortable margins,
-  /// while intercontinental routes retain natural global framing.
+  /// with dynamic adaptive zoom.
   static ({
     double scale,
     Offset centerNorm,
@@ -34,12 +33,73 @@ class MapProjectionHelper {
     double? minSpan,
     double verticalOffset = 14.0,
   }) {
-    final double midX = (p1Norm.dx + p2Norm.dx) / 2.0;
-    final double midY = (p1Norm.dy + p2Norm.dy) / 2.0;
+    return calculateViewportForPoints(
+      canvasSize: canvasSize,
+      pointsNorm: [p1Norm, p2Norm],
+      paddingRatio: paddingRatio,
+      minSpan: minSpan,
+      verticalOffset: verticalOffset,
+    );
+  }
+
+  /// Calculates a viewport scale and offset to fit multiple normalized points
+  /// (e.g. multi-city or round-trip stops) on the canvas with dynamic adaptive zoom.
+  static ({
+    double scale,
+    Offset centerNorm,
+    Offset Function(Offset norm) toScreen,
+  }) calculateViewportForPoints({
+    required Size canvasSize,
+    required List<Offset> pointsNorm,
+    double paddingRatio = 0.35,
+    double? minSpan,
+    double verticalOffset = 14.0,
+  }) {
+    if (pointsNorm.isEmpty) {
+      final defaultCenter = const Offset(0.5, 0.5);
+      return (
+        scale: canvasSize.width,
+        centerNorm: defaultCenter,
+        toScreen: (norm) => Offset(
+          (norm.dx - defaultCenter.dx) * canvasSize.width + canvasSize.width / 2.0,
+          (norm.dy - defaultCenter.dy) * canvasSize.width + canvasSize.height / 2.0 + verticalOffset,
+        ),
+      );
+    }
+
+    if (pointsNorm.length == 1) {
+      final singlePoint = pointsNorm.first;
+      const adaptiveMinSpan = 0.035;
+      final scale = canvasSize.width / adaptiveMinSpan;
+      return (
+        scale: scale,
+        centerNorm: singlePoint,
+        toScreen: (norm) => Offset(
+          (norm.dx - singlePoint.dx) * scale + canvasSize.width / 2.0,
+          (norm.dy - singlePoint.dy) * scale + canvasSize.height / 2.0 + verticalOffset,
+        ),
+      );
+    }
+
+    double minX = pointsNorm.first.dx;
+    double maxX = pointsNorm.first.dx;
+    double minY = pointsNorm.first.dy;
+    double maxY = pointsNorm.first.dy;
+
+    for (int i = 1; i < pointsNorm.length; i++) {
+      final p = pointsNorm[i];
+      if (p.dx < minX) minX = p.dx;
+      if (p.dx > maxX) maxX = p.dx;
+      if (p.dy < minY) minY = p.dy;
+      if (p.dy > maxY) maxY = p.dy;
+    }
+
+    final double midX = (minX + maxX) / 2.0;
+    final double midY = (minY + maxY) / 2.0;
     final Offset centerNorm = Offset(midX, midY);
 
-    final double dx = (p1Norm.dx - p2Norm.dx).abs();
-    final double dy = (p1Norm.dy - p2Norm.dy).abs();
+    final double dx = maxX - minX;
+    final double dy = maxY - minY;
     final double normDistance = math.sqrt(dx * dx + dy * dy);
 
     // Adaptive minimum span: enables high zoom for short/domestic flights
@@ -59,7 +119,7 @@ class MapProjectionHelper {
       adaptiveMinSpan = math.max(adaptiveMinSpan, minSpan);
     }
 
-    // Short-haul routes receive extra breathing room for floating cards and the arched trajectory
+    // Short-haul routes receive extra breathing room for floating cards and arched trajectories
     final double effectivePadding = (normDistance < 0.04) ? 0.48 : paddingRatio;
 
     double spanX = dx * (1.0 + effectivePadding * 2);
@@ -92,11 +152,13 @@ class MapProjectionHelper {
     );
   }
 
-  /// Generates a quadratic Bezier path arched upward between start and end screen points.
+  /// Generates a quadratic Bezier path arched between start and end screen points.
+  /// If [invertCurvature] is true, the arc curves in the opposite direction (useful for return legs).
   static Path createFlightArcPath({
     required Offset start,
     required Offset end,
     double curveRatio = 0.22,
+    bool invertCurvature = false,
   }) {
     final Path path = Path();
     path.moveTo(start.dx, start.dy);
@@ -114,14 +176,19 @@ class MapProjectionHelper {
     // Normal vector perpendicular to the chord
     Offset normal = Offset(-delta.dy, delta.dx) / distance;
 
-    // Ensure normal points upward (negative Y in canvas space) or toward top/left
+    // Standard upward pointing: negative Y in canvas coordinates
     if (normal.dy > 0 || (normal.dy == 0 && normal.dx > 0)) {
+      normal = -normal;
+    }
+
+    if (invertCurvature) {
       normal = -normal;
     }
 
     // Dynamic bow height: clamped to stay visually balanced across all distances
     final double bowHeight = (distance * curveRatio).clamp(18.0, 56.0);
-    final Offset controlPoint = mid + normal * bowHeight + const Offset(0, -4.0);
+    final Offset verticalShift = invertCurvature ? const Offset(0, 4.0) : const Offset(0, -4.0);
+    final Offset controlPoint = mid + normal * bowHeight + verticalShift;
 
     path.quadraticBezierTo(controlPoint.dx, controlPoint.dy, end.dx, end.dy);
     return path;

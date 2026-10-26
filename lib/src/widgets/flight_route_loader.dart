@@ -4,7 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../helpers/airport_coordinates_helper.dart';
 import '../helpers/map_projection_helper.dart';
+import '../models/airport.dart';
 import '../models/country_polygon.dart';
+import '../models/flight_route_stop.dart';
+import '../models/flight_trip_type.dart';
 import '../models/map_precomputed_paths.dart';
 import '../services/geo_json_service.dart';
 import 'flight_map_painter.dart';
@@ -12,7 +15,15 @@ import 'flight_map_painter.dart';
 /// A full-screen or embedded flight route loading widget featuring an animated,
 /// offline vector world map, collision-free airport cards, tangent-rotated airplane,
 /// and step progress indicators.
+///
+/// Supports [FlightTripType.oneWay], [FlightTripType.roundTrip], and [FlightTripType.multiCity] itineraries.
 class FlightRouteLoader extends StatefulWidget {
+  /// Itinerary type mode: one-way, round-trip, or multi-city.
+  final FlightTripType tripType;
+
+  /// Explicit list of route stops. If provided, overrides [fromCode]/[toCode].
+  final List<FlightRouteStop>? stops;
+
   /// Origin 3-letter IATA code (e.g. 'DAC', 'JFK').
   final String fromCode;
 
@@ -101,16 +112,19 @@ class FlightRouteLoader extends StatefulWidget {
   /// Custom text style for country names.
   final TextStyle? labelStyle;
 
+  /// Standard constructor supporting one-way routes, round-trips, or multi-city trips.
   const FlightRouteLoader({
     super.key,
-    required this.fromCode,
-    required this.fromCity,
+    this.tripType = FlightTripType.oneWay,
+    this.stops,
+    this.fromCode = '',
+    this.fromCity = '',
     this.fromLat,
     this.fromLng,
     this.fromCountry,
     this.fromCountryCode,
-    required this.toCode,
-    required this.toCity,
+    this.toCode = '',
+    this.toCity = '',
     this.toLat,
     this.toLng,
     this.toCountry,
@@ -134,6 +148,256 @@ class FlightRouteLoader extends StatefulWidget {
     this.labelStyle,
   });
 
+  /// Factory constructor for a one-way flight between two [FlightRouteStop] stops.
+  factory FlightRouteLoader.oneWay({
+    Key? key,
+    required FlightRouteStop from,
+    required FlightRouteStop to,
+    Color brandColor = const Color(0xFF1F4A3F),
+    List<String>? stepLabels,
+    int? currentStep,
+    Duration stepDuration = const Duration(milliseconds: 1400),
+    String? subtitle,
+    VoidCallback? onCancel,
+    bool showTopPill = true,
+    bool showBottomStepBar = true,
+    Duration animationDuration = const Duration(milliseconds: 2500),
+    Color? waterColor,
+    Color? landColor,
+    Color? borderColor,
+    Color? cardBackgroundColor,
+    Color? cardBorderColor,
+    TextStyle? codeStyle,
+    TextStyle? cityStyle,
+    TextStyle? labelStyle,
+  }) {
+    return FlightRouteLoader(
+      key: key,
+      tripType: FlightTripType.oneWay,
+      stops: [from, to],
+      fromCode: from.code,
+      fromCity: from.city,
+      fromLat: from.latitude,
+      fromLng: from.longitude,
+      fromCountry: from.country,
+      fromCountryCode: from.countryCode,
+      toCode: to.code,
+      toCity: to.city,
+      toLat: to.latitude,
+      toLng: to.longitude,
+      toCountry: to.country,
+      toCountryCode: to.countryCode,
+      brandColor: brandColor,
+      stepLabels: stepLabels,
+      currentStep: currentStep,
+      stepDuration: stepDuration,
+      subtitle: subtitle,
+      onCancel: onCancel,
+      showTopPill: showTopPill,
+      showBottomStepBar: showBottomStepBar,
+      animationDuration: animationDuration,
+      waterColor: waterColor,
+      landColor: landColor,
+      borderColor: borderColor,
+      cardBackgroundColor: cardBackgroundColor,
+      cardBorderColor: cardBorderColor,
+      codeStyle: codeStyle,
+      cityStyle: cityStyle,
+      labelStyle: labelStyle,
+    );
+  }
+
+  /// Factory constructor for a round-trip flight between two [FlightRouteStop] stops.
+  factory FlightRouteLoader.roundTrip({
+    Key? key,
+    required FlightRouteStop from,
+    required FlightRouteStop to,
+    Color brandColor = const Color(0xFF1F4A3F),
+    List<String>? stepLabels,
+    int? currentStep,
+    Duration stepDuration = const Duration(milliseconds: 1400),
+    String? subtitle,
+    VoidCallback? onCancel,
+    bool showTopPill = true,
+    bool showBottomStepBar = true,
+    Duration animationDuration = const Duration(milliseconds: 3200),
+    Color? waterColor,
+    Color? landColor,
+    Color? borderColor,
+    Color? cardBackgroundColor,
+    Color? cardBorderColor,
+    TextStyle? codeStyle,
+    TextStyle? cityStyle,
+    TextStyle? labelStyle,
+  }) {
+    return FlightRouteLoader(
+      key: key,
+      tripType: FlightTripType.roundTrip,
+      stops: [from, to],
+      fromCode: from.code,
+      fromCity: from.city,
+      fromLat: from.latitude,
+      fromLng: from.longitude,
+      fromCountry: from.country,
+      fromCountryCode: from.countryCode,
+      toCode: to.code,
+      toCity: to.city,
+      toLat: to.latitude,
+      toLng: to.longitude,
+      toCountry: to.country,
+      toCountryCode: to.countryCode,
+      brandColor: brandColor,
+      stepLabels: stepLabels,
+      currentStep: currentStep,
+      stepDuration: stepDuration,
+      subtitle: subtitle,
+      onCancel: onCancel,
+      showTopPill: showTopPill,
+      showBottomStepBar: showBottomStepBar,
+      animationDuration: animationDuration,
+      waterColor: waterColor,
+      landColor: landColor,
+      borderColor: borderColor,
+      cardBackgroundColor: cardBackgroundColor,
+      cardBorderColor: cardBorderColor,
+      codeStyle: codeStyle,
+      cityStyle: cityStyle,
+      labelStyle: labelStyle,
+    );
+  }
+
+  /// Factory constructor for a multi-city flight consisting of 2 or more sequential stops.
+  factory FlightRouteLoader.multiCity({
+    Key? key,
+    required List<FlightRouteStop> stops,
+    Color brandColor = const Color(0xFF1F4A3F),
+    List<String>? stepLabels,
+    int? currentStep,
+    Duration stepDuration = const Duration(milliseconds: 1400),
+    String? subtitle,
+    VoidCallback? onCancel,
+    bool showTopPill = true,
+    bool showBottomStepBar = true,
+    Duration animationDuration = const Duration(milliseconds: 4000),
+    Color? waterColor,
+    Color? landColor,
+    Color? borderColor,
+    Color? cardBackgroundColor,
+    Color? cardBorderColor,
+    TextStyle? codeStyle,
+    TextStyle? cityStyle,
+    TextStyle? labelStyle,
+  }) {
+    assert(stops.length >= 2, 'Multi-city flights must have at least 2 stops.');
+    final first = stops.first;
+    final last = stops.last;
+    return FlightRouteLoader(
+      key: key,
+      tripType: FlightTripType.multiCity,
+      stops: stops,
+      fromCode: first.code,
+      fromCity: first.city,
+      fromLat: first.latitude,
+      fromLng: first.longitude,
+      fromCountry: first.country,
+      fromCountryCode: first.countryCode,
+      toCode: last.code,
+      toCity: last.city,
+      toLat: last.latitude,
+      toLng: last.longitude,
+      toCountry: last.country,
+      toCountryCode: last.countryCode,
+      brandColor: brandColor,
+      stepLabels: stepLabels,
+      currentStep: currentStep,
+      stepDuration: stepDuration,
+      subtitle: subtitle,
+      onCancel: onCancel,
+      showTopPill: showTopPill,
+      showBottomStepBar: showBottomStepBar,
+      animationDuration: animationDuration,
+      waterColor: waterColor,
+      landColor: landColor,
+      borderColor: borderColor,
+      cardBackgroundColor: cardBackgroundColor,
+      cardBorderColor: cardBorderColor,
+      codeStyle: codeStyle,
+      cityStyle: cityStyle,
+      labelStyle: labelStyle,
+    );
+  }
+
+  /// Convenience constructor to build directly from a list of [Airport] models.
+  factory FlightRouteLoader.fromAirports({
+    Key? key,
+    required List<Airport> airports,
+    FlightTripType tripType = FlightTripType.oneWay,
+    Color brandColor = const Color(0xFF1F4A3F),
+    List<String>? stepLabels,
+    int? currentStep,
+    Duration stepDuration = const Duration(milliseconds: 1400),
+    String? subtitle,
+    VoidCallback? onCancel,
+    bool showTopPill = true,
+    bool showBottomStepBar = true,
+    Duration? animationDuration,
+    Color? waterColor,
+    Color? landColor,
+    Color? borderColor,
+    Color? cardBackgroundColor,
+    Color? cardBorderColor,
+    TextStyle? codeStyle,
+    TextStyle? cityStyle,
+    TextStyle? labelStyle,
+  }) {
+    assert(airports.length >= 2, 'Itinerary must contain at least 2 airports.');
+    final stops = airports.map(FlightRouteStop.fromAirport).toList();
+    final effectiveDuration = animationDuration ??
+        (tripType == FlightTripType.multiCity
+            ? const Duration(milliseconds: 4000)
+            : (tripType == FlightTripType.roundTrip
+                ? const Duration(milliseconds: 3200)
+                : const Duration(milliseconds: 2500)));
+
+    final first = stops.first;
+    final last = stops.last;
+
+    return FlightRouteLoader(
+      key: key,
+      tripType: tripType,
+      stops: stops,
+      fromCode: first.code,
+      fromCity: first.city,
+      fromLat: first.latitude,
+      fromLng: first.longitude,
+      fromCountry: first.country,
+      fromCountryCode: first.countryCode,
+      toCode: last.code,
+      toCity: last.city,
+      toLat: last.latitude,
+      toLng: last.longitude,
+      toCountry: last.country,
+      toCountryCode: last.countryCode,
+      brandColor: brandColor,
+      stepLabels: stepLabels,
+      currentStep: currentStep,
+      stepDuration: stepDuration,
+      subtitle: subtitle,
+      onCancel: onCancel,
+      showTopPill: showTopPill,
+      showBottomStepBar: showBottomStepBar,
+      animationDuration: effectiveDuration,
+      waterColor: waterColor,
+      landColor: landColor,
+      borderColor: borderColor,
+      cardBackgroundColor: cardBackgroundColor,
+      cardBorderColor: cardBorderColor,
+      codeStyle: codeStyle,
+      cityStyle: cityStyle,
+      labelStyle: labelStyle,
+    );
+  }
+
   @override
   State<FlightRouteLoader> createState() => _FlightRouteLoaderState();
 }
@@ -148,10 +412,8 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
   MapPrecomputedPaths? _precomputed;
   Size? _lastSize;
 
-  late double _resolvedFromLat;
-  late double _resolvedFromLng;
-  late double _resolvedToLat;
-  late double _resolvedToLng;
+  late List<FlightRouteStop> _effectiveStops;
+  late List<(double lat, double lng)> _resolvedCoords;
 
   static const List<String> _defaultSteps = [
     'Live fares',
@@ -164,6 +426,7 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
   void initState() {
     super.initState();
 
+    _normalizeStops();
     _resolveCoordinates();
 
     _animController = AnimationController(
@@ -175,26 +438,43 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
     _loadGeoData();
   }
 
-  void _resolveCoordinates() {
-    final fromCoords = AirportCoordinatesHelper.getCoordinates(
-      widget.fromCode,
-      fallbackLat: widget.fromLat,
-      fallbackLng: widget.fromLng,
-      country: widget.fromCountry,
-      countryCode: widget.fromCountryCode,
-    );
-    _resolvedFromLat = fromCoords.$1;
-    _resolvedFromLng = fromCoords.$2;
+  void _normalizeStops() {
+    if (widget.stops != null && widget.stops!.isNotEmpty) {
+      _effectiveStops = List<FlightRouteStop>.from(widget.stops!);
+    } else {
+      _effectiveStops = [
+        FlightRouteStop(
+          code: widget.fromCode,
+          city: widget.fromCity,
+          latitude: widget.fromLat,
+          longitude: widget.fromLng,
+          country: widget.fromCountry,
+          countryCode: widget.fromCountryCode,
+        ),
+        FlightRouteStop(
+          code: widget.toCode,
+          city: widget.toCity,
+          latitude: widget.toLat,
+          longitude: widget.toLng,
+          country: widget.toCountry,
+          countryCode: widget.toCountryCode,
+        ),
+      ];
+    }
+  }
 
-    final toCoords = AirportCoordinatesHelper.getCoordinates(
-      widget.toCode,
-      fallbackLat: widget.toLat,
-      fallbackLng: widget.toLng,
-      country: widget.toCountry,
-      countryCode: widget.toCountryCode,
-    );
-    _resolvedToLat = toCoords.$1;
-    _resolvedToLng = toCoords.$2;
+  void _resolveCoordinates() {
+    _resolvedCoords = [];
+    for (final stop in _effectiveStops) {
+      final coords = AirportCoordinatesHelper.getCoordinates(
+        stop.code,
+        fallbackLat: stop.latitude,
+        fallbackLng: stop.longitude,
+        country: stop.country,
+        countryCode: stop.countryCode,
+      );
+      _resolvedCoords.add((coords.$1, coords.$2));
+    }
   }
 
   void _initStepTimer() {
@@ -227,10 +507,13 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
 
     if (oldWidget.fromCode != widget.fromCode ||
         oldWidget.toCode != widget.toCode ||
+        oldWidget.stops != widget.stops ||
+        oldWidget.tripType != widget.tripType ||
         oldWidget.fromLat != widget.fromLat ||
         oldWidget.fromLng != widget.fromLng ||
         oldWidget.toLat != widget.toLat ||
         oldWidget.toLng != widget.toLng) {
+      _normalizeStops();
       _resolveCoordinates();
       _recomputePaths();
     }
@@ -242,26 +525,24 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
 
   void _recomputePaths() {
     if (_countries == null || _lastSize == null || _lastSize!.width <= 0) return;
+    if (_resolvedCoords.isEmpty) return;
 
     final Size size = _lastSize!;
-    final Offset p1Norm = MapProjectionHelper.projectToMercator(
-      _resolvedFromLat,
-      _resolvedFromLng,
-    );
-    final Offset p2Norm = MapProjectionHelper.projectToMercator(
-      _resolvedToLat,
-      _resolvedToLng,
-    );
+    final List<Offset> pointsNorm = _resolvedCoords
+        .map((c) => MapProjectionHelper.projectToMercator(c.$1, c.$2))
+        .toList();
 
-    final viewport = MapProjectionHelper.calculateViewport(
+    final viewport = MapProjectionHelper.calculateViewportForPoints(
       canvasSize: size,
-      p1Norm: p1Norm,
-      p2Norm: p2Norm,
+      pointsNorm: pointsNorm,
       paddingRatio: 0.35,
     );
 
-    final Offset startPoint = viewport.toScreen(p1Norm);
-    final Offset endPoint = viewport.toScreen(p2Norm);
+    final List<Offset> stopScreenPositions =
+        pointsNorm.map((p) => viewport.toScreen(p)).toList();
+
+    final Offset startPoint = stopScreenPositions.first;
+    final Offset endPoint = stopScreenPositions.last;
 
     final Path fillPath = Path();
     final Path strokePath = Path();
@@ -283,7 +564,6 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
       final Offset sMax = viewport.toScreen(cMax);
       final Rect countryScreenBox = Rect.fromPoints(sMin, sMax);
 
-      // Skip country if completely outside screen viewport
       if (!screenRect.overlaps(countryScreenBox)) continue;
 
       for (final ring in country.rings) {
@@ -306,37 +586,131 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
         strokePath.addPath(ringPath, Offset.zero);
       }
 
-      // Display country name labels uncluttered
       if (country.name.isNotEmpty &&
           countryScreenBox.width > 60.0 &&
           countryScreenBox.height > 35.0 &&
           screenRect.contains(countryScreenBox.center)) {
-        final double distToStart = (countryScreenBox.center - startPoint).distance;
-        final double distToEnd = (countryScreenBox.center - endPoint).distance;
-        if (distToStart > 45.0 && distToEnd > 45.0) {
+        bool tooCloseToStop = false;
+        for (final pos in stopScreenPositions) {
+          if ((countryScreenBox.center - pos).distance <= 45.0) {
+            tooCloseToStop = true;
+            break;
+          }
+        }
+        if (!tooCloseToStop) {
           visibleLabels.add((name: country.name, position: countryScreenBox.center));
         }
       }
     }
 
-    final Path flightArc = MapProjectionHelper.createFlightArcPath(
-      start: startPoint,
-      end: endPoint,
-      curveRatio: 0.22,
-    );
+    // Build Flight Leg Paths
+    final List<FlightLegPath> legs = [];
 
-    final metrics = flightArc.computeMetrics().toList();
-    if (metrics.isEmpty) return;
+    if (widget.tripType == FlightTripType.roundTrip && stopScreenPositions.length >= 2) {
+      final p0 = stopScreenPositions.first;
+      final p1 = stopScreenPositions[1];
+
+      // Leg 0: Outbound (arched upward)
+      final outboundPath = MapProjectionHelper.createFlightArcPath(
+        start: p0,
+        end: p1,
+        curveRatio: 0.22,
+        invertCurvature: false,
+      );
+      final outboundMetrics = outboundPath.computeMetrics().toList();
+      if (outboundMetrics.isNotEmpty) {
+        legs.add(
+          FlightLegPath(
+            startPoint: p0,
+            endPoint: p1,
+            arcPath: outboundPath,
+            arcMetric: outboundMetrics.first,
+            isReturn: false,
+            legIndex: 0,
+          ),
+        );
+      }
+
+      // Leg 1: Return (arched downward)
+      final returnPath = MapProjectionHelper.createFlightArcPath(
+        start: p1,
+        end: p0,
+        curveRatio: 0.22,
+        invertCurvature: true,
+      );
+      final returnMetrics = returnPath.computeMetrics().toList();
+      if (returnMetrics.isNotEmpty) {
+        legs.add(
+          FlightLegPath(
+            startPoint: p1,
+            endPoint: p0,
+            arcPath: returnPath,
+            arcMetric: returnMetrics.first,
+            isReturn: true,
+            legIndex: 1,
+          ),
+        );
+      }
+    } else if (widget.tripType == FlightTripType.multiCity && stopScreenPositions.length >= 2) {
+      for (int i = 0; i < stopScreenPositions.length - 1; i++) {
+        final pi = stopScreenPositions[i];
+        final pNext = stopScreenPositions[i + 1];
+        final legPath = MapProjectionHelper.createFlightArcPath(
+          start: pi,
+          end: pNext,
+          curveRatio: 0.20,
+        );
+        final metrics = legPath.computeMetrics().toList();
+        if (metrics.isNotEmpty) {
+          legs.add(
+            FlightLegPath(
+              startPoint: pi,
+              endPoint: pNext,
+              arcPath: legPath,
+              arcMetric: metrics.first,
+              isReturn: false,
+              legIndex: i,
+            ),
+          );
+        }
+      }
+    } else {
+      // One-way or fallback
+      final flightArc = MapProjectionHelper.createFlightArcPath(
+        start: startPoint,
+        end: endPoint,
+        curveRatio: 0.22,
+      );
+      final metrics = flightArc.computeMetrics().toList();
+      if (metrics.isNotEmpty) {
+        legs.add(
+          FlightLegPath(
+            startPoint: startPoint,
+            endPoint: endPoint,
+            arcPath: flightArc,
+            arcMetric: metrics.first,
+            isReturn: false,
+            legIndex: 0,
+          ),
+        );
+      }
+    }
+
+    if (legs.isEmpty) return;
+
+    final primaryLeg = legs.first;
 
     _precomputed = MapPrecomputedPaths(
       size: size,
       countriesFillPath: fillPath,
       countriesStrokePath: strokePath,
-      flightArcPath: flightArc,
-      arcMetric: metrics.first,
+      flightArcPath: primaryLeg.arcPath,
+      arcMetric: primaryLeg.arcMetric,
       startPoint: startPoint,
       endPoint: endPoint,
       visibleLabels: visibleLabels,
+      legs: legs,
+      stopScreenPositions: stopScreenPositions,
     );
   }
 
@@ -349,24 +723,29 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final List<String> steps = widget.stepLabels ?? _defaultSteps;
-    final int activeStep = widget.currentStep ?? _internalStep;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    final effectiveWater = widget.waterColor ??
-        (isDark ? const Color(0xFF131A18) : const Color(0xFFE2EBE7));
+    final steps = widget.stepLabels ?? _defaultSteps;
+    final activeStep = widget.currentStep ?? _internalStep;
+
+    final String effectiveFromCity = _effectiveStops.first.city.isNotEmpty
+        ? _effectiveStops.first.city
+        : (_effectiveStops.first.code.isNotEmpty ? _effectiveStops.first.code : widget.fromCity);
+    final String effectiveToCity = _effectiveStops.last.city.isNotEmpty
+        ? _effectiveStops.last.city
+        : (_effectiveStops.last.code.isNotEmpty ? _effectiveStops.last.code : widget.toCity);
 
     return Scaffold(
-      backgroundColor: effectiveWater,
       body: Stack(
         children: [
           // ── 1. Vector Map Canvas ──
           Positioned.fill(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final newSize = Size(constraints.maxWidth, constraints.maxHeight);
-                if (_lastSize != newSize) {
-                  _lastSize = newSize;
+                final currentSize = constraints.biggest;
+                if (_lastSize != currentSize) {
+                  _lastSize = currentSize;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (mounted) setState(() => _recomputePaths());
                   });
@@ -374,29 +753,29 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
 
                 return AnimatedBuilder(
                   animation: _animController,
-                  builder: (context, child) {
-                    return RepaintBoundary(
-                      child: CustomPaint(
-                        size: newSize,
-                        painter: FlightMapPainter(
-                          precomputed: _precomputed,
-                          animationProgress: _animController.value,
-                          fromCode: widget.fromCode,
-                          fromCity: widget.fromCity,
-                          toCode: widget.toCode,
-                          toCity: widget.toCity,
-                          brandColor: widget.brandColor,
-                          isDarkMode: isDark,
-                          waterColor: widget.waterColor,
-                          landColor: widget.landColor,
-                          borderColor: widget.borderColor,
-                          cardBackgroundColor: widget.cardBackgroundColor,
-                          cardBorderColor: widget.cardBorderColor,
-                          codeStyle: widget.codeStyle,
-                          cityStyle: widget.cityStyle,
-                          labelStyle: widget.labelStyle,
-                        ),
+                  builder: (context, _) {
+                    return CustomPaint(
+                      painter: FlightMapPainter(
+                        precomputed: _precomputed,
+                        animationProgress: _animController.value,
+                        fromCode: _effectiveStops.first.code,
+                        fromCity: effectiveFromCity,
+                        toCode: _effectiveStops.last.code,
+                        toCity: effectiveToCity,
+                        stops: _effectiveStops,
+                        tripType: widget.tripType,
+                        brandColor: widget.brandColor,
+                        isDarkMode: isDark,
+                        waterColor: widget.waterColor,
+                        landColor: widget.landColor,
+                        borderColor: widget.borderColor,
+                        cardBackgroundColor: widget.cardBackgroundColor,
+                        cardBorderColor: widget.cardBorderColor,
+                        codeStyle: widget.codeStyle,
+                        cityStyle: widget.cityStyle,
+                        labelStyle: widget.labelStyle,
                       ),
+                      size: Size.infinite,
                     );
                   },
                 );
@@ -411,7 +790,7 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
                 alignment: Alignment.topCenter,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                  child: _buildTopPill(isDark),
+                  child: _buildTopPill(isDark, effectiveFromCity, effectiveToCity),
                 ),
               ),
             ),
@@ -432,7 +811,139 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
     );
   }
 
-  Widget _buildTopPill(bool isDark) {
+  Widget _buildTopPill(bool isDark, String fromCity, String toCity) {
+    IconData badgeIcon;
+    Widget routeTitleWidget;
+    String subtitleText;
+
+    final titleStyle = _safeGoogleFont(
+      () => GoogleFonts.fraunces(
+        fontSize: 14.0,
+        fontWeight: FontWeight.bold,
+        color: isDark ? const Color(0xFFF4EFE6) : const Color(0xFF15201D),
+      ),
+      fallback: TextStyle(
+        fontSize: 14.0,
+        fontWeight: FontWeight.bold,
+        color: isDark ? const Color(0xFFF4EFE6) : const Color(0xFF15201D),
+      ),
+    );
+
+    if (widget.tripType == FlightTripType.roundTrip) {
+      badgeIcon = Icons.sync_alt_rounded;
+      subtitleText = widget.subtitle ?? 'ROUND TRIP • Outbound & return flight fares';
+      routeTitleWidget = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              fromCity,
+              style: titleStyle,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+            child: Icon(
+              Icons.swap_horiz_rounded,
+              size: 16.0,
+              color: widget.brandColor,
+            ),
+          ),
+          Flexible(
+            child: Text(
+              toCity,
+              style: titleStyle,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      );
+    } else if (widget.tripType == FlightTripType.multiCity && _effectiveStops.length > 2) {
+      badgeIcon = Icons.alt_route_rounded;
+      subtitleText = widget.subtitle ??
+          'MULTI-CITY • Scanning ${_effectiveStops.length - 1} flight routes';
+
+      if (_effectiveStops.length == 3) {
+        routeTitleWidget = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(child: Text(_effectiveStops[0].city, style: titleStyle, overflow: TextOverflow.ellipsis)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Icon(Icons.arrow_forward_rounded, size: 12.0, color: widget.brandColor),
+            ),
+            Flexible(child: Text(_effectiveStops[1].city, style: titleStyle, overflow: TextOverflow.ellipsis)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Icon(Icons.arrow_forward_rounded, size: 12.0, color: widget.brandColor),
+            ),
+            Flexible(child: Text(_effectiveStops[2].city, style: titleStyle, overflow: TextOverflow.ellipsis)),
+          ],
+        );
+      } else {
+        routeTitleWidget = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(child: Text(_effectiveStops.first.city, style: titleStyle, overflow: TextOverflow.ellipsis)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Icon(Icons.arrow_forward_rounded, size: 12.0, color: widget.brandColor),
+            ),
+            Flexible(child: Text(_effectiveStops[1].city, style: titleStyle, overflow: TextOverflow.ellipsis)),
+            Padding(
+              padding: const EdgeInsets.only(left: 6.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: widget.brandColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+                child: Text(
+                  '+${_effectiveStops.length - 2} stops',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.bold,
+                    color: widget.brandColor,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+    } else {
+      badgeIcon = Icons.flight_takeoff_rounded;
+      subtitleText = widget.subtitle ?? 'Scanning airlines for live fares...';
+      routeTitleWidget = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              fromCity,
+              style: titleStyle,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+            child: Icon(
+              Icons.arrow_forward_rounded,
+              size: 13.0,
+              color: widget.brandColor,
+            ),
+          ),
+          Flexible(
+            child: Text(
+              toCity,
+              style: titleStyle,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
       decoration: BoxDecoration(
@@ -452,7 +963,7 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Circular Plane Badge
+          // Circular Badge
           Container(
             width: 36.0,
             height: 36.0,
@@ -464,7 +975,7 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
               ),
             ),
             child: Icon(
-              Icons.flight_takeoff_rounded,
+              badgeIcon,
               color: widget.brandColor,
               size: 19.0,
             ),
@@ -477,66 +988,10 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        widget.fromCity,
-                        style: _safeGoogleFont(
-                          () => GoogleFonts.fraunces(
-                            fontSize: 14.0,
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? const Color(0xFFF4EFE6)
-                                : const Color(0xFF15201D),
-                          ),
-                          fallback: TextStyle(
-                            fontSize: 14.0,
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? const Color(0xFFF4EFE6)
-                                : const Color(0xFF15201D),
-                          ),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                      child: Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 13.0,
-                        color: widget.brandColor,
-                      ),
-                    ),
-                    Flexible(
-                      child: Text(
-                        widget.toCity,
-                        style: _safeGoogleFont(
-                          () => GoogleFonts.fraunces(
-                            fontSize: 14.0,
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? const Color(0xFFF4EFE6)
-                                : const Color(0xFF15201D),
-                          ),
-                          fallback: TextStyle(
-                            fontSize: 14.0,
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? const Color(0xFFF4EFE6)
-                                : const Color(0xFF15201D),
-                          ),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
+                routeTitleWidget,
                 const SizedBox(height: 1.5),
                 Text(
-                  widget.subtitle ?? 'Scanning airlines for live fares...',
+                  subtitleText,
                   style: _safeGoogleFont(
                     () => GoogleFonts.plusJakartaSans(
                       fontSize: 11.0,
