@@ -1,6 +1,6 @@
 name: flight_world_loading
 description: A high-performance, offline vector map flight search loading screen for Flutter with adaptive zoom, quadratic Bezier trajectory, and global airport resolution.
-version: 0.0.1
+version: 0.0.2
 homepage: https://github.com/MontasirOpi/flight_world_loading-package
 repository: https://github.com/MontasirOpi/flight_world_loading-package
 issue_tracker: https://github.com/MontasirOpi/flight_world_loading-package/issues
@@ -10,6 +10,9 @@ topics:
   - animation
   - map
   - travel
+screenshots:
+  - description: 'Round-trip flight loading animation on vector world map'
+    path: screenshots/round_trip.png
 
 environment:
   sdk: ^3.0.0
@@ -18,7 +21,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  google_fonts: ^9.0.0
 
 dev_dependencies:
   flutter_test:

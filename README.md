@@ -21,7 +21,7 @@ A high-performance, offline vector map flight search loading screen for Flutter 
   - Automatically resolves country centroids (~240 countries/territories) with deterministic dispersion for unknown airports in the same country.
   - Supports registering custom airport databases or dynamic resolver callbacks.
   - Never crashes: unknown or fictitious codes resolve gracefully without overlapping.
-- 🎨 **Pure Vanilla Flutter**: Zero framework bloat (no GetX, no ScreenUtil, no easy_localization). Fully compatible with Material 3, light/dark themes, and responsive screen scaling.
+- 🎨 **Pure Vanilla Flutter (Zero Third-Party Dependencies)**: Requires **no third-party runtime packages** (no `google_fonts`, no `GetX`, no `ScreenUtil`), preventing any dependency solver or version conflicts with host applications. Fully compatible with Material 3, light/dark themes, and custom typography overrides.
 
 ---
 
@@ -31,7 +31,7 @@ Add `flight_world_loading` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flight_world_loading: ^0.0.1
+  flight_world_loading: ^0.0.2
 ```
 
 Import it in your Dart code:

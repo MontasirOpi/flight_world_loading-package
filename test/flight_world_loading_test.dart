@@ -304,6 +304,32 @@ void main() {
       expect(find.text('London'), findsWidgets);
       expect(find.byIcon(Icons.sync_alt_rounded), findsOneWidget);
     });
+
+    testWidgets('renders FlightRouteLoader with custom text styles and without GoogleFonts dependency', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FlightRouteLoader(
+            fromCode: 'DAC',
+            fromCity: 'Dhaka',
+            toCode: 'JFK',
+            toCity: 'New York',
+            subtitle: 'Searching 200+ flights...',
+            titleStyle: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.w800, color: Colors.amber),
+            subtitleStyle: const TextStyle(fontSize: 12.0, color: Colors.blueGrey),
+            codeStyle: const TextStyle(fontSize: 14.0, fontWeight: FontWeight.bold),
+            cityStyle: const TextStyle(fontSize: 11.0, fontStyle: FontStyle.italic),
+            labelStyle: const TextStyle(fontSize: 8.0, letterSpacing: 1.0),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.text('Dhaka'), findsWidgets);
+      expect(find.text('New York'), findsWidgets);
+      expect(find.text('Searching 200+ flights...'), findsOneWidget);
+      expect(find.byType(CustomPaint), findsWidgets);
+    });
   });
 
   group('Multi-point Viewport & RouteStop Model Tests', () {

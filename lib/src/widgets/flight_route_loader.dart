@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../helpers/airport_coordinates_helper.dart';
 import '../helpers/map_projection_helper.dart';
@@ -112,6 +111,12 @@ class FlightRouteLoader extends StatefulWidget {
   /// Custom text style for country names.
   final TextStyle? labelStyle;
 
+  /// Custom text style for the route header pill title.
+  final TextStyle? titleStyle;
+
+  /// Custom text style for the route header pill subtitle.
+  final TextStyle? subtitleStyle;
+
   /// Standard constructor supporting one-way routes, round-trips, or multi-city trips.
   const FlightRouteLoader({
     super.key,
@@ -146,6 +151,8 @@ class FlightRouteLoader extends StatefulWidget {
     this.codeStyle,
     this.cityStyle,
     this.labelStyle,
+    this.titleStyle,
+    this.subtitleStyle,
   });
 
   /// Factory constructor for a one-way flight between two [FlightRouteStop] stops.
@@ -170,6 +177,8 @@ class FlightRouteLoader extends StatefulWidget {
     TextStyle? codeStyle,
     TextStyle? cityStyle,
     TextStyle? labelStyle,
+    TextStyle? titleStyle,
+    TextStyle? subtitleStyle,
   }) {
     return FlightRouteLoader(
       key: key,
@@ -204,6 +213,8 @@ class FlightRouteLoader extends StatefulWidget {
       codeStyle: codeStyle,
       cityStyle: cityStyle,
       labelStyle: labelStyle,
+      titleStyle: titleStyle,
+      subtitleStyle: subtitleStyle,
     );
   }
 
@@ -229,6 +240,8 @@ class FlightRouteLoader extends StatefulWidget {
     TextStyle? codeStyle,
     TextStyle? cityStyle,
     TextStyle? labelStyle,
+    TextStyle? titleStyle,
+    TextStyle? subtitleStyle,
   }) {
     return FlightRouteLoader(
       key: key,
@@ -263,6 +276,8 @@ class FlightRouteLoader extends StatefulWidget {
       codeStyle: codeStyle,
       cityStyle: cityStyle,
       labelStyle: labelStyle,
+      titleStyle: titleStyle,
+      subtitleStyle: subtitleStyle,
     );
   }
 
@@ -287,6 +302,8 @@ class FlightRouteLoader extends StatefulWidget {
     TextStyle? codeStyle,
     TextStyle? cityStyle,
     TextStyle? labelStyle,
+    TextStyle? titleStyle,
+    TextStyle? subtitleStyle,
   }) {
     assert(stops.length >= 2, 'Multi-city flights must have at least 2 stops.');
     final first = stops.first;
@@ -324,6 +341,8 @@ class FlightRouteLoader extends StatefulWidget {
       codeStyle: codeStyle,
       cityStyle: cityStyle,
       labelStyle: labelStyle,
+      titleStyle: titleStyle,
+      subtitleStyle: subtitleStyle,
     );
   }
 
@@ -349,6 +368,8 @@ class FlightRouteLoader extends StatefulWidget {
     TextStyle? codeStyle,
     TextStyle? cityStyle,
     TextStyle? labelStyle,
+    TextStyle? titleStyle,
+    TextStyle? subtitleStyle,
   }) {
     assert(airports.length >= 2, 'Itinerary must contain at least 2 airports.');
     final stops = airports.map(FlightRouteStop.fromAirport).toList();
@@ -395,6 +416,8 @@ class FlightRouteLoader extends StatefulWidget {
       codeStyle: codeStyle,
       cityStyle: cityStyle,
       labelStyle: labelStyle,
+      titleStyle: titleStyle,
+      subtitleStyle: subtitleStyle,
     );
   }
 
@@ -816,18 +839,13 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
     Widget routeTitleWidget;
     String subtitleText;
 
-    final titleStyle = _safeGoogleFont(
-      () => GoogleFonts.fraunces(
-        fontSize: 14.0,
-        fontWeight: FontWeight.bold,
-        color: isDark ? const Color(0xFFF4EFE6) : const Color(0xFF15201D),
-      ),
-      fallback: TextStyle(
-        fontSize: 14.0,
-        fontWeight: FontWeight.bold,
-        color: isDark ? const Color(0xFFF4EFE6) : const Color(0xFF15201D),
-      ),
-    );
+    final titleStyle = widget.titleStyle ??
+        TextStyle(
+          fontSize: 14.0,
+          fontWeight: FontWeight.bold,
+          color: isDark ? const Color(0xFFF4EFE6) : const Color(0xFF15201D),
+          fontFamilyFallback: const ['Georgia', 'serif'],
+        );
 
     if (widget.tripType == FlightTripType.roundTrip) {
       badgeIcon = Icons.sync_alt_rounded;
@@ -992,20 +1010,13 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
                 const SizedBox(height: 1.5),
                 Text(
                   subtitleText,
-                  style: _safeGoogleFont(
-                    () => GoogleFonts.plusJakartaSans(
-                      fontSize: 11.0,
-                      color: isDark
-                          ? const Color(0xFF909090)
-                          : const Color(0xFF7B8884),
-                    ),
-                    fallback: TextStyle(
-                      fontSize: 11.0,
-                      color: isDark
-                          ? const Color(0xFF909090)
-                          : const Color(0xFF7B8884),
-                    ),
-                  ),
+                  style: widget.subtitleStyle ??
+                      TextStyle(
+                        fontSize: 11.0,
+                        color: isDark
+                            ? const Color(0xFF909090)
+                            : const Color(0xFF7B8884),
+                      ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -1093,40 +1104,24 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
                 circleBg = widget.brandColor;
                 circleContent = Text(
                   '${stepIdx + 1}',
-                  style: _safeGoogleFont(
-                    () => GoogleFonts.jetBrainsMono(
-                      color: Colors.white,
-                      fontSize: 11.0,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    fallback: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11.0,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'monospace',
-                    ),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11.0,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
                   ),
                 );
               } else {
                 circleBg = isDark ? const Color(0xFF282828) : const Color(0xFFEDE6D7);
                 circleContent = Text(
                   '${stepIdx + 1}',
-                  style: _safeGoogleFont(
-                    () => GoogleFonts.jetBrainsMono(
-                      color: isDark
-                          ? const Color(0xFF909090)
-                          : const Color(0xFF7B8884),
-                      fontSize: 11.0,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    fallback: TextStyle(
-                      color: isDark
-                          ? const Color(0xFF909090)
-                          : const Color(0xFF7B8884),
-                      fontSize: 11.0,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'monospace',
-                    ),
+                  style: TextStyle(
+                    color: isDark
+                        ? const Color(0xFF909090)
+                        : const Color(0xFF7B8884),
+                    fontSize: 11.0,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
                   ),
                 );
               }
@@ -1162,38 +1157,22 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
               Expanded(
                 child: Text(
                   steps[clampedStep],
-                  style: _safeGoogleFont(
-                    () => GoogleFonts.plusJakartaSans(
-                      fontSize: 13.0,
-                      fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? const Color(0xFFF4EFE6)
-                          : const Color(0xFF15201D),
-                    ),
-                    fallback: TextStyle(
-                      fontSize: 13.0,
-                      fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? const Color(0xFFF4EFE6)
-                          : const Color(0xFF15201D),
-                    ),
+                  style: TextStyle(
+                    fontSize: 13.0,
+                    fontWeight: FontWeight.bold,
+                    color: isDark
+                        ? const Color(0xFFF4EFE6)
+                        : const Color(0xFF15201D),
                   ),
                 ),
               ),
               Text(
                 'Step ${clampedStep + 1} / ${steps.length}',
-                style: _safeGoogleFont(
-                  () => GoogleFonts.jetBrainsMono(
-                    fontSize: 11.0,
-                    color: widget.brandColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  fallback: TextStyle(
-                    fontSize: 11.0,
-                    color: widget.brandColor,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'monospace',
-                  ),
+                style: TextStyle(
+                  fontSize: 11.0,
+                  color: widget.brandColor,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'monospace',
                 ),
               ),
             ],
@@ -1201,13 +1180,5 @@ class _FlightRouteLoaderState extends State<FlightRouteLoader>
         ],
       ),
     );
-  }
-
-  static TextStyle _safeGoogleFont(TextStyle Function() builder, {required TextStyle fallback}) {
-    try {
-      return builder();
-    } catch (_) {
-      return fallback;
-    }
   }
 }

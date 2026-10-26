@@ -193,8 +193,7 @@ Add the following to your target `pubspec.yaml`:
 dependencies:
   flutter:
     sdk: flutter
-  google_fonts: ^6.2.1          # For JetBrains Mono, Fraunces & Plus Jakarta Sans
-  flutter_screenutil: ^5.9.3    # (Optional, can be replaced with MediaQuery)
+  flight_world_loading: ^0.0.2
 
 flutter:
   assets:

@@ -1,3 +1,9 @@
+## 0.0.2
+
+* Removed third-party `google_fonts` runtime dependency: `flight_world_loading` now has **zero third-party dependencies** (depends only on Flutter SDK), preventing version conflicts with any host application packages.
+* Replaced direct `GoogleFonts` calls with native `TextStyle` and robust font family fallbacks (monospace for flight numbers/stats, serif/sans-serif for labels).
+* Added optional `titleStyle` and `subtitleStyle` parameters to `FlightRouteLoader` and all its factory constructors (`oneWay`, `roundTrip`, `multiCity`, `fromAirports`), allowing host apps to supply custom typography.
+
 ## 0.0.1
 
 * Initial release of `flight_world_loading`.

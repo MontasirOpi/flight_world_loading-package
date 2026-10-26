@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../models/flight_route_stop.dart';
 import '../models/flight_trip_type.dart';
@@ -128,19 +127,11 @@ class FlightMapPainter extends CustomPainter {
     final effectiveLabelColor =
         isDarkMode ? const Color(0xFF6B8079) : const Color(0xFF8C9B96);
     final effectiveLabelStyle = labelStyle ??
-        _safeGoogleFont(
-          () => GoogleFonts.plusJakartaSans(
-            color: effectiveLabelColor,
-            fontSize: 9.0,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.5,
-          ),
-          fallback: TextStyle(
-            color: effectiveLabelColor,
-            fontSize: 9.0,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.5,
-          ),
+        TextStyle(
+          color: effectiveLabelColor,
+          fontSize: 9.0,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.5,
         );
 
     for (final label in data.visibleLabels) {
@@ -474,35 +465,21 @@ class FlightMapPainter extends CustomPainter {
 
     // 2. Card Dimensions & Text Layout
     final effectiveCodeStyle = codeStyle ??
-        _safeGoogleFont(
-          () => GoogleFonts.jetBrainsMono(
-            color: brandColor,
-            fontSize: 12.0,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-          fallback: TextStyle(
-            color: brandColor,
-            fontSize: 12.0,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'monospace',
-            letterSpacing: 0.5,
-          ),
+        TextStyle(
+          color: brandColor,
+          fontSize: 12.0,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'monospace',
+          letterSpacing: 0.5,
         );
 
     final cityColor = isDarkMode ? const Color(0xFFE2ECE9) : const Color(0xFF15201D);
     final effectiveCityStyle = cityStyle ??
-        _safeGoogleFont(
-          () => GoogleFonts.fraunces(
-            color: cityColor,
-            fontSize: 10.5,
-            fontWeight: FontWeight.w600,
-          ),
-          fallback: TextStyle(
-            color: cityColor,
-            fontSize: 10.5,
-            fontWeight: FontWeight.w600,
-          ),
+        TextStyle(
+          color: cityColor,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w600,
+          fontFamilyFallback: const ['Georgia', 'serif'],
         );
 
     final displayText = (stopIndex != null)
@@ -602,14 +579,6 @@ class FlightMapPainter extends CustomPainter {
       canvas,
       Offset(contentCenterX - cityPainter.width / 2.0, cardTop + 6.5 + codePainter.height),
     );
-  }
-
-  static TextStyle _safeGoogleFont(TextStyle Function() builder, {required TextStyle fallback}) {
-    try {
-      return builder();
-    } catch (_) {
-      return fallback;
-    }
   }
 
   @override
